@@ -3,7 +3,9 @@ import operator
 from spec import Spec, eq_, ok_, raises, assert_raises
 
 from invoke.collection import Collection
-from invoke.tasks import task, Task
+from invoke.executor import Executor
+
+from invoke.tasks import call, task, Task
 from invoke.vendor import six
 from invoke.vendor.six.moves import reduce
 
@@ -224,6 +226,44 @@ class Collection_(Spec):
             self.c.add_task(Task(_func, name='notfunc'))
             assert 'notfunc' in self.c
             assert '_func' not in self.c
+
+        def task_with_pre_task(self):
+            @task(default=True)
+            def task1():
+                pass
+            @task(pre=[task1])
+            def task2():
+                pass
+            self.c.add_task(task1)
+            self.c.add_task(task2)
+            assert 'task1' in self.c
+            assert 'task2' in self.c
+            assert task1 in self.c.tasks.task2.pre
+
+        def task_with_pre_callable_task(self):
+            @task
+            def clean(which=None):
+                which = which or 'pyc'
+                print("Cleaning {0}".format(which))
+
+            @task(pre=[call(clean, which='all')])
+            def build():
+                print("Building")
+            #self.c.add_task(build)
+            #self.c.add_task(clean)
+            #self.c.name = 'new_c'
+            # Collection().add_collection(self.c)
+            # assert 'build' in self.c
+            # assert 'clean' in self.c
+            c = Collection(clean,build)
+            assert 'build' in c
+            assert 'clean' in c
+            e = Executor(collection=c)
+            e.execute('build')
+
+
+
+            # assert clean in self.c.tasks.build.pre
 
         @raises(ValueError)
         def raises_ValueError_if_no_name_found(self):
