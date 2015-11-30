@@ -164,6 +164,11 @@ class Collection_(Spec):
             c4 = Collection.from_module(mod2)
             assert c3 is not c4
 
+        def load_collection_from_real_module(self):
+            from tests.files import my_tasks
+            c = Collection.from_module(my_tasks)
+            assert c
+
         class explicit_root_ns:
             def setup(self):
                 mod = load('explicit_root')
